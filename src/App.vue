@@ -3,5 +3,5 @@ import BookSearchForm from './components/BookSearchForm.vue';
 </script>
 
 <template>
-  <BookSearchForm />
+  <router-view />
 </template>
