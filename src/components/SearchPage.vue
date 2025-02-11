@@ -1,7 +1,7 @@
 <template>
     <div class="flex min-h-screen">
       <!-- Barre latérale avec "Boogle" -->
-      <aside class="w-1/4 bg-gray-100 p-6 flex items-center justify-center">
+      <aside class="w-1/4 bg-gray-100 p-6 flex">
         <h1 class="text-5xl font-bold text-blue-700 mb-6">
             <span class="text-blue-700">B</span>
             <span class="text-red-500">o</span>
@@ -17,7 +17,7 @@
         <h2 class="text-2xl font-bold mb-4">Résultats pour "{{ query }}"</h2>
   
         <ul v-if="books.length">
-            <li v-for="book in books" :key="book.id" class="border rounded-lg shadow-lg p-4 mb-4 flex items-start space-x-4 bg-white">
+            <li v-for="book in books" :key="book.id" class="border border-gray-200 rounded-lg shadow-lg p-4 mb-4 flex items-start space-x-4 bg-white">
                 <!-- Partie gauche : Titre, Auteur et Extrait -->
                 <div class="flex-1">
                 <!-- Titre -->
