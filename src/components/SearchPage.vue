@@ -58,7 +58,7 @@
         <ul>
             <li v-for="recommendation in recommendations" :key="recommendation.id" class="mb-4 p-4 border border-gray-300 rounded-lg shadow-md bg-white">
             <h3 class="text-lg font-semibold text-blue-500">{{ recommendation.title }}</h3>
-            <p class="text-gray-600">Auteur : {{ recommendation.authors[0].name }}</p>
+            <p class="text-gray-600">Auteur : {{ recommendation.authors[0]?.name }}</p>
             <img v-if="recommendation.image" :src="`http://localhost:3000/${recommendation.image}`" alt="Book Cover" class="w-20 h-30 mt-2 rounded-md object-cover"/>
             </li>
         </ul>
