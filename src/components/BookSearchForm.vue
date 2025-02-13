@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-    <h1 class="text-5xl font-bold text-blue-700 mb-6">
+  <div class="flex flex-col items-center justify-center min-h-screen bg-gray-100 px-4 sm:px-6 lg:px-8">
+    <h1 class="text-5xl font-bold text-blue-700 mb-6 text-center">
         <span class="text-blue-700">B</span>
         <span class="text-red-500">o</span>
         <span class="text-yellow-500">o</span>
@@ -10,14 +10,13 @@
     </h1>
 
     <form @submit.prevent="searchBooks" class="max-w-lg w-full mx-auto">
-      <div class="flex space-x-2 relative">
+      <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 relative">
         <div class="relative flex-grow">
             <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
                 <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
                 </svg>
             </div>
-            <!-- Ajout de pr-24 pour laisser de la place au bouton -->
             <input v-model="searchQuery" 
               @input="fetchSuggestions"
               @focus="showSuggestions = true"
@@ -40,16 +39,13 @@
           </button>
         </div>  
 
-        <!-- Affichage du compteur -->
         <p v-if="suggestions.length" class="text-sm text-gray-600 mt-2">
           {{ suggestions.length }} suggestion(s) trouvée(s)
         </p>
         
         <div class="relative w-full">
-          <!-- Liste des suggestions -->
           <ul v-if="showSuggestions && suggestions.length" 
-              class="absolute left-0 w-full bg-white border border-gray-300 rounded-md shadow-md mt-1 
-                    max-h-96 overflow-auto z-10">
+              class="absolute left-0 w-full bg-white border border-gray-300 rounded-md shadow-md mt-1 max-h-96 overflow-auto z-10">
             <li 
               v-for="suggestion in suggestions" 
               :key="suggestion.id"
@@ -60,12 +56,10 @@
             </li>
           </ul>
         </div>
-
     </form>
-
   </div>
 </template>
-  
+
 <script setup>
   import { ref } from "vue";
   import axios from "axios";
@@ -91,16 +85,10 @@
 
     try {
       const response = await axios.get(`http://localhost:3000/api/search/autocomplete?prefix=${encodeURIComponent(searchQuery.value)}`);
-      console.log(response.data);
       suggestions.value = response.data[0];
     } catch (error) {
       console.error('Erreur lors de la recherche :', error);
     }
-
-    // Filtrage des suggestions qui commencent par le mot-clé saisi
-  /*  suggestions.value = allValues.filter(item =>
-      item.toLowerCase().startsWith(searchQuery.value.toLowerCase())
-    );*/
   };
 
   const selectSuggestion = (titre) => {
@@ -108,10 +96,8 @@
     showSuggestions.value = false;
   };
 
-  // Fonction pour mettre en gras le mot saisi
   const highlightMatch = (text) => {
     if (!searchQuery.value) return text;
-
     const regex = new RegExp(`(${searchQuery.value})`, "gi");
     return text.replace(regex, '<strong>$1</strong>');
   };
@@ -129,11 +115,9 @@
 </script>
 
 <style scoped>
-
   [type='search']::-webkit-search-cancel-button {
     -webkit-appearance: none;
-    background-color: transparent;  /* Fond transparent */
+    background-color: transparent;
     color: white;
   }
 </style>
-  
