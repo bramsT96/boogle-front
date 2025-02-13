@@ -1,8 +1,9 @@
 <template>
   <div class="min-h-screen flex flex-col items-center bg-gray-100 p-6">
 
-    <div class="w-full max-w-md mb-4">    
-      <label for="chapter" class="block text-lg font-semibold text-gray-700 mb-2">Sélectionnez un chapitre :</label>
+    <div class="w-full max-w-md mb-4">   
+      <div v-if="hasChapters">
+        <label for="chapter" class="block text-lg font-semibold text-gray-700 mb-2">Sélectionnez un chapitre :</label>
 
         <div class="relative">
           <select v-model="selectedChapter" id="chapter" 
@@ -14,7 +15,9 @@
             </option>
           </select>
         </div>
-      </div>  
+        
+      </div> 
+    </div>  
 
       <div class="max-w-4xl w-full bg-white p-6 rounded-lg shadow-lg">
 
@@ -63,6 +66,7 @@
   const content = ref(""); // Contenu du livre
   const chapters = ref([]); // Liste des chapitres
   const selectedChapter = ref(""); // Chapitre sélectionné
+  const hasChapters = ref(false); // Booléen pour savoir si le livre a des chapitres
   
   const fetchBookDetails = async () => {
     try {
@@ -83,13 +87,14 @@
     const matches = content.value.match(regex);
 
     if (matches) {
-      // Utilisation d'un Set pour éliminer les doublons
-      const uniqueChapters = Array.from(new Set(matches));
-
-      chapters.value = uniqueChapters.map((title, index) => ({
-        title,
-        index
-      }));
+        const uniqueChapters = Array.from(new Set(matches));
+        chapters.value = uniqueChapters.map((title, index) => ({
+            title,
+            index
+        }));
+        hasChapters.value = true; // Il y a des chapitres
+    } else {
+        hasChapters.value = false; // Pas de chapitres
     }
 
     if (chapters.value.length > 0) {
@@ -98,39 +103,36 @@
   };
 
 
-  // Contenu filtré en fonction du chapitre sélectionné
   const fullChapterContent = computed(() => {
-    if (!content.value || !selectedChapter.value) {
-      return ""; // Si pas de contenu ou de chapitre sélectionné, rien n'est retourné.
-    } 
+    if (!content.value) return "";
 
-    // Séparation du contenu en parties (chapitres et lettres)
-    const parts = content.value.split(/(Chapter \d+|Letter \d+)/g).filter(Boolean);
-    
-    let chapterText = "";
-    let foundChapter = false;
-    let chapterCount = 0; // Compteur pour suivre combien de fois le chapitre a été trouvé
-    
-    // Recherche du chapitre sélectionné et récupération de son contenu
-    for (let i = 0; i < parts.length; i++) {
-      if (foundChapter) {
-        if (parts[i].startsWith('Chapter') || parts[i].startsWith('Letter')) { // Si on trouve un autre chapitre ou lettre, on s'arrête
-          break;
-        }
-        chapterText += parts[i];
-      }
+    if (hasChapters.value) {
+        // Cas avec chapitres : On filtre le contenu du chapitre sélectionné
+        const parts = content.value.split(/(Chapter \d+|Letter \d+)/g).filter(Boolean);
+        
+        let chapterText = "";
+        let foundChapter = false;
+        let chapterCount = 0;
 
-      // Si on trouve le chapitre sélectionné, commencer à récupérer le contenu
-      if (parts[i].trim().toLowerCase() === selectedChapter.value.trim().toLowerCase()) {
-        chapterCount++;
-        if (chapterCount === 2) { // Une fois qu'on a trouvé la deuxième occurrence du chapitre
-          foundChapter = true;
+        for (let i = 0; i < parts.length; i++) {
+            if (foundChapter) {
+                if (parts[i].startsWith("Chapter") || parts[i].startsWith("Letter")) break;
+                chapterText += parts[i];
+            }
+
+            if (parts[i].trim().toLowerCase() === selectedChapter.value.trim().toLowerCase()) {
+                chapterCount++;
+                if (chapterCount === 2) foundChapter = true;
+            }
         }
-      }
+
+        return chapterText.trim();
+    } else {
+        // Cas sans chapitres : On retourne tout le livre
+        return content.value.trim();
     }
-
-    return chapterText.trim();
   });
+
 
   watch(selectedChapter, (newChapter) => {
     page.value = 0;
@@ -146,13 +148,12 @@
     let pageText = [];
     let index = 0;
 
-    // Commencer là où la dernière page s'est arrêtée
     for (let i = 0; i < page.value; i++) {
         while (index < sentences.length && wordCount + sentences[index].split(/\s+/).length <= wordsPerPage) {
             wordCount += sentences[index].split(/\s+/).length;
             index++;
         }
-        wordCount = 0; // Reset du compteur pour la page suivante
+        wordCount = 0; 
     }
 
     while (index < sentences.length && wordCount + sentences[index].split(/\s+/).length <= wordsPerPage) {
@@ -162,8 +163,7 @@
     }
 
     return pageText.join(" ").trim();
-});
-
+  });
 
   
   const hasMorePages = computed(() => {
