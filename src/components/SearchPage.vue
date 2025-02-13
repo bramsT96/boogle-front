@@ -30,9 +30,9 @@
 
         <h2 class="text-2xl font-bold mb-4">Résultats pour "{{ searchQuery }}"</h2>
   
-        <ul v-if="books.length">
-            <li v-for="book in books" :key="book.id" class="border border-gray-300 rounded-lg shadow-lg p-4 mb-4 bg-white hover:shadow-xl transition-all">
-              <div class="flex space-x-4"> 
+        <ul v-if="books.length" class="space-y-4">
+          <router-link v-for="book in books" :key="book.id" :to="`/book/${book.id}`" class="block border border-gray-300 rounded-lg shadow-lg p-4 bg-white hover:shadow-xl transition-all transform hover:scale-105">
+            <li class="flex space-x-4">
                 <div class="flex-1">
                   <h3 class="text-lg font-bold text-blue-500">{{ book.title }}</h3>
                   <p class="text-gray-700 ">Auteur(s) : {{ book.authors.map(a => a.name).join(', ') }}</p>
@@ -45,8 +45,8 @@
                   <img v-if="book.image" :src="`http://localhost:3000/${book.image}`" 
                     alt="Book cover" class="max-w-full h-full object-cover rounded-lg" />
                 </div>
-              </div> 
             </li>
+          </router-link>
         </ul>
 
         <p v-else class="text-gray-500">Aucun résultat trouvé.</p>
