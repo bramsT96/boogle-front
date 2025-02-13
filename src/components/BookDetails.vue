@@ -1,6 +1,23 @@
 <template>
-    <div class="min-h-screen flex flex-col items-center bg-gray-100 p-6">
-      <div class="max-w-4xl w-full bg-white p-6 rounded-lg shadow-md">
+  <div class="min-h-screen flex flex-col items-center bg-gray-100 p-6">
+
+    <div class="w-full max-w-md mb-4">    
+      <label for="chapter" class="block text-lg font-semibold text-gray-700 mb-2">Sélectionnez un chapitre :</label>
+
+        <div class="relative">
+          <select v-model="selectedChapter" id="chapter" 
+            class="w-full appearance-none bg-white border border-gray-300 text-gray-700 
+                   text-lg py-3 px-4 pr-10 rounded-lg shadow-md focus:outline-none 
+                   focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+            <option v-for="chapter in chapters" :key="chapter.index" :value="chapter.title">
+              {{ chapter.title }}
+            </option>
+          </select>
+        </div>
+      </div>  
+
+      <div class="max-w-4xl w-full bg-white p-6 rounded-lg shadow-lg">
+
         <!-- Image & Infos -->
         <div class="flex flex-col md:flex-row items-center space-x-4">
           <img v-if="book.image" :src="`http://localhost:3000/${book.image}`" 
@@ -13,28 +30,29 @@
   
         <!-- Pagination & Contenu -->
         <div class="mt-6 border-t pt-4">
-          <h2 class="text-xl font-semibold text-gray-700 mb-2">Contenu :</h2>
+          <h2 class="text-xl font-semibold text-gray-700 mb-2">{{ selectedChapter }}</h2>
           <p class="text-gray-600 leading-relaxed" v-html="paginatedContent"></p>
   
           <!-- Navigation du contenu -->
           <div class="flex justify-between items-center mt-4">
-            <button @click="previousPage" :disabled="currentPage === 0" 
+            <button @click="previousPage" :disabled="!hasPreviousPage" 
                     class="px-4 py-2 bg-gray-300 text-gray-700 rounded disabled:opacity-50">
                Page précédente
             </button>
-            <span class="text-gray-600">Page {{ currentPage + 1 }} / {{ totalPages }}</span>
-            <button @click="nextPage" :disabled="currentPage >= totalPages - 1" 
+            <span class="text-gray-600">Page {{ page + 1 }} / {{ totalPages }}</span>
+            <button @click="nextPage" :disabled="!hasMorePages" 
                     class="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50">
               Page suivante
             </button>
+
           </div>
         </div>
       </div>
     </div>
   </template>
   
-  <script setup>
-  import { ref, computed, onMounted } from 'vue';
+<script setup>
+  import { ref, computed, onMounted, watch } from 'vue';
   import { useRoute } from 'vue-router';
   import axios from 'axios';
   
@@ -42,61 +60,136 @@
   const book = ref({});
   const page = ref(0);
   const wordsPerPage = 400; // Nombre de mots par page
+  const content = ref(""); // Contenu du livre
+  const chapters = ref([]); // Liste des chapitres
+  const selectedChapter = ref(""); // Chapitre sélectionné
   
   const fetchBookDetails = async () => {
     try {
       const response = await axios.get(`http://localhost:3000/api/books/${route.params.id}`);
-      book.value = response.data;
       console.log(response.data);
+      book.value = response.data;
+      content.value = book.value.content || "";
+      extractChapters();
     } catch (error) {
       console.error("Erreur lors de la récupération du livre :", error);
     }
   };
-  
-  const paginatedContent = computed(() => {
-    if (!book.value.content) return "";
 
-    // Découper le texte en phrases complètes
-    const sentences = book.value.content.match(/[^.!?]+[.!?]/g);
-    if (!sentences) return ""; // Si pas de phrases trouvées, retour vide
+
+  // Fonction pour extraire les chapitres dynamiquement
+  const extractChapters = () => {
+    const regex = /(Chapter \d+)/g; // Recherche "Chapter X"
+    const matches = content.value.match(regex);
+
+    if (matches) {
+      // Utilisation d'un Set pour éliminer les doublons
+      const uniqueChapters = Array.from(new Set(matches));
+
+      chapters.value = uniqueChapters.map((title, index) => ({
+        title,
+        index
+      }));
+    }
+
+    if (chapters.value.length > 0) {
+      selectedChapter.value = chapters.value[0].title;
+    }
+  };
+
+
+  // Contenu filtré en fonction du chapitre sélectionné
+  const fullChapterContent = computed(() => {
+    if (!content.value || !selectedChapter.value) {
+      return ""; // Si pas de contenu ou de chapitre sélectionné, rien n'est retourné.
+    } 
+
+    // Séparation du contenu en parties (chapitres et lettres)
+    const parts = content.value.split(/(Chapter \d+|Letter \d+)/g).filter(Boolean);
+    
+    let chapterText = "";
+    let foundChapter = false;
+    let chapterCount = 0; // Compteur pour suivre combien de fois le chapitre a été trouvé
+    
+    // Recherche du chapitre sélectionné et récupération de son contenu
+    for (let i = 0; i < parts.length; i++) {
+      if (foundChapter) {
+        if (parts[i].startsWith('Chapter') || parts[i].startsWith('Letter')) { // Si on trouve un autre chapitre ou lettre, on s'arrête
+          break;
+        }
+        chapterText += parts[i];
+      }
+
+      // Si on trouve le chapitre sélectionné, commencer à récupérer le contenu
+      if (parts[i].trim().toLowerCase() === selectedChapter.value.trim().toLowerCase()) {
+        chapterCount++;
+        if (chapterCount === 2) { // Une fois qu'on a trouvé la deuxième occurrence du chapitre
+          foundChapter = true;
+        }
+      }
+    }
+
+    return chapterText.trim();
+  });
+
+  watch(selectedChapter, (newChapter) => {
+    page.value = 0;
+  });
+
+  const paginatedContent = computed(() => {
+    if (!fullChapterContent.value) return "";
+
+    const sentences = fullChapterContent.value.match(/[^.!?]+[.!?]/g);
+    if (!sentences) return "";
 
     let wordCount = 0;
-    let pageContent = [];
+    let pageText = [];
     let index = 0;
 
-    // Trouver où commence la page actuelle
+    // Commencer là où la dernière page s'est arrêtée
     for (let i = 0; i < page.value; i++) {
-        while (index < sentences.length && wordCount + sentences[index].split(" ").length <= wordsPerPage) {
-        wordCount += sentences[index].split(" ").length;
-        index++;
+        while (index < sentences.length && wordCount + sentences[index].split(/\s+/).length <= wordsPerPage) {
+            wordCount += sentences[index].split(/\s+/).length;
+            index++;
         }
-        wordCount = 0; // Reset pour la page suivante
+        wordCount = 0; // Reset du compteur pour la page suivante
     }
 
-    // Ajouter les phrases jusqu'à atteindre environ 400 mots
-    while (index < sentences.length && wordCount + sentences[index].split(" ").length <= wordsPerPage) {
-        wordCount += sentences[index].split(" ").length;
-        pageContent.push(sentences[index]);
+    while (index < sentences.length && wordCount + sentences[index].split(/\s+/).length <= wordsPerPage) {
+        wordCount += sentences[index].split(/\s+/).length;
+        pageText.push(sentences[index]);
         index++;
     }
 
-    return pageContent.join(" ").trim();
-    });
-  
-  const hasMorePages = computed(() => {
-    if (!book.value.content) return false;
-    const sentences = book.value.content.match(/[^.!?]+[.!?]/g);
-    return sentences && (page.value + 1) * wordsPerPage < book.value.content.split(" ").length;
+    return pageText.join(" ").trim();
 });
 
 
+  
+  const hasMorePages = computed(() => {
+    if (!fullChapterContent.value) return false; // Si aucun contenu filtré, il n'y a pas de page suivante
+
+    const words = fullChapterContent.value.split(/\s+/);
+
+    return (page.value + 1) * wordsPerPage < words.length;
+  });
+
+  const hasPreviousPage = computed(() => {
+    return page.value > 0;
+  });
+
+
   const currentPage = ref(0);
+
   const totalPages = computed(() => {
-    if (!book.value.content) return 0; // Handle case where content is empty
-    const words = book.value.content.split(" ");
+    if (!fullChapterContent.value) return 0;
+
+    const words = fullChapterContent.value.split(/\s+/);
     return Math.ceil(words.length / wordsPerPage);
   });
-  
+
+
+
   const nextPage = () => {
     if (hasMorePages.value) {
         page.value++;
