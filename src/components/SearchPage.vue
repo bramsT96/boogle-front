@@ -49,7 +49,7 @@
           </router-link>
         </ul>
 
-        <p v-else class="text-gray-500">Aucun résultat trouvé.</p>
+        <p v-else class="text-gray-500">Aucun résultat trouvé. Essayez avec :<span id="suggestTerm" style="color: blue; cursor: pointer;"></span></p>
       </main>
 
       <!-- Section de recommandations -->
@@ -99,6 +99,15 @@
       const response = await axios.get(`http://localhost:3000/api/search?mot=${encodeURIComponent(searchQuery.value)}`);
       console.log(response.data);
       books.value = response.data.books;
+      if(books.value.length === 0 && response.data.termSuggestion) {
+        const suggestTermSpan = document.getElementById('suggestTerm');
+        suggestTermSpan.innerText = " " +response.data.termSuggestion;
+        
+        suggestTermSpan.addEventListener('click', () => {
+          searchQuery.value = response.data.termSuggestion;
+          searchBooks();
+        });
+      }
       recommendations.value = response.data.recommendations;
     } catch (error) {
       console.error('Erreur lors de la recherche :', error);
