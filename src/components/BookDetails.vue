@@ -4,7 +4,6 @@
     <div class="w-full max-w-md mb-4">   
       <div v-if="hasChapters">
         <label for="chapter" class="block text-lg font-semibold text-gray-700 mb-2">Sélectionnez un chapitre :</label>
-
         <div class="relative">
           <select v-model="selectedChapter" id="chapter" 
             class="w-full appearance-none bg-white border border-gray-300 text-gray-700 
@@ -15,13 +14,11 @@
             </option>
           </select>
         </div>
-        
       </div> 
     </div>  
 
       <div class="max-w-4xl w-full bg-white p-6 rounded-lg shadow-lg">
 
-        <!-- Image & Infos -->
         <div class="flex flex-col md:flex-row items-center space-x-4">
           <img v-if="book.image" :src="`http://localhost:3000/${book.image}`" 
                alt="Book Cover" class="w-40 h-60 rounded-lg shadow-lg object-cover"/>
@@ -31,12 +28,10 @@
           </div>
         </div>
   
-        <!-- Pagination & Contenu -->
         <div class="mt-6 border-t pt-4">
           <h2 class="text-xl font-semibold text-gray-700 mb-2">{{ selectedChapter }}</h2>
           <p class="text-gray-600 leading-relaxed" v-html="paginatedContent"></p>
   
-          <!-- Navigation du contenu -->
           <div class="flex justify-between items-center mt-4">
             <button @click="previousPage" :disabled="!hasPreviousPage" 
                     class="px-4 py-2 bg-gray-300 text-gray-700 rounded disabled:opacity-50">
@@ -67,23 +62,21 @@
   const chapters = ref([]); // Liste des chapitres
   const selectedChapter = ref(""); // Chapitre sélectionné
   const hasChapters = ref(false); // Booléen pour savoir si le livre a des chapitres
+  const currentPage = ref(0);
   
   const fetchBookDetails = async () => {
     try {
       const response = await axios.get(`http://localhost:3000/api/books/${route.params.id}`);
-      console.log(response.data);
       book.value = response.data;
-      content.value = book.value.content || "";
+      content.value = book.value.content;
       extractChapters();
     } catch (error) {
       console.error("Erreur lors de la récupération du livre :", error);
     }
   };
 
-
-  // Fonction pour extraire les chapitres dynamiquement
   const extractChapters = () => {
-    const regex = /(Chapter \d+)/g; // Recherche "Chapter X"
+    const regex = /(Chapter \d+)/g; 
     const matches = content.value.match(regex);
 
     if (matches) {
@@ -92,9 +85,9 @@
             title,
             index
         }));
-        hasChapters.value = true; // Il y a des chapitres
+        hasChapters.value = true; 
     } else {
-        hasChapters.value = false; // Pas de chapitres
+        hasChapters.value = false; 
     }
 
     if (chapters.value.length > 0) {
@@ -104,11 +97,12 @@
 
 
   const fullChapterContent = computed(() => {
-    if (!content.value) return "";
+    if (!content.value) {
+      return "";
+    } 
 
     if (hasChapters.value) {
-        // Cas avec chapitres : On filtre le contenu du chapitre sélectionné
-        const parts = content.value.split(/(Chapter \d+|Letter \d+)/g).filter(Boolean);
+        const parts = content.value.split(/(Chapter \d+)/g).filter(Boolean);
         
         let chapterText = "";
         let foundChapter = false;
@@ -116,7 +110,9 @@
 
         for (let i = 0; i < parts.length; i++) {
             if (foundChapter) {
-                if (parts[i].startsWith("Chapter") || parts[i].startsWith("Letter")) break;
+                if (parts[i].startsWith("Chapter")) {
+                  break;
+                } 
                 chapterText += parts[i];
             }
 
@@ -128,7 +124,6 @@
 
         return chapterText.trim();
     } else {
-        // Cas sans chapitres : On retourne tout le livre
         return content.value.trim();
     }
   });
@@ -139,10 +134,14 @@
   });
 
   const paginatedContent = computed(() => {
-    if (!fullChapterContent.value) return "";
+    if (!fullChapterContent.value) {
+      return "";
+    } 
 
     const sentences = fullChapterContent.value.match(/[^.!?]+[.!?]/g);
-    if (!sentences) return "";
+    if (!sentences) {
+      return "";
+    } 
 
     let wordCount = 0;
     let pageText = [];
@@ -167,10 +166,10 @@
 
   
   const hasMorePages = computed(() => {
-    if (!fullChapterContent.value) return false; // Si aucun contenu filtré, il n'y a pas de page suivante
-
+    if (!fullChapterContent.value) {
+      return false;
+    }  
     const words = fullChapterContent.value.split(/\s+/);
-
     return (page.value + 1) * wordsPerPage < words.length;
   });
 
@@ -178,33 +177,29 @@
     return page.value > 0;
   });
 
-
-  const currentPage = ref(0);
-
   const totalPages = computed(() => {
-    if (!fullChapterContent.value) return 0;
+    if (!fullChapterContent.value) {
+      return 0;
+    } 
 
     const words = fullChapterContent.value.split(/\s+/);
     return Math.ceil(words.length / wordsPerPage);
   });
 
 
-
   const nextPage = () => {
     if (hasMorePages.value) {
         page.value++;
-        currentPage.value = page.value; // Synchronisation de currentPage avec page
+        currentPage.value = page.value; 
     }
   };
   
   const previousPage = () => {
     if (page.value > 0) {
         page.value--;
-        currentPage.value = page.value; // Synchronisation de currentPage avec page
+        currentPage.value = page.value;
     }
   };
   
   onMounted(fetchBookDetails);
 </script>  
-  
-  

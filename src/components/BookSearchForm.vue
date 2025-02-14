@@ -74,7 +74,7 @@
 
   const toggleAdvancedSearch = () => {
     isAdvancedSearch.value = !isAdvancedSearch.value;
-    searchPlaceholder.value = isAdvancedSearch.value ? "Recherche avancée" : "Recherchez un livre";
+    searchPlaceholder.value = isAdvancedSearch.value ? "Recherche avancée" : "Recherchez un livre";  
   };
 
   const fetchSuggestions = async () => {
@@ -108,10 +108,26 @@
     }, 200); 
   };
 
-  const searchBooks = () => {
-    if (!searchQuery.value.trim()) return;
-    router.push({ path: '/search', query: { q: searchQuery.value } });
+  const searchBooks = async () => {
+    if (!searchQuery.value.trim()) {
+      return;
+    }  
+    try {
+      let results;
+      if (isAdvancedSearch.value) {
+        const response = await axios.get(`http://localhost:3000/api/search/advanced?regex=${encodeURIComponent(searchQuery.value)}`);
+        results = response.data;
+      } else {
+        const response = await axios.get(`http://localhost:3000/api/search?mot=${encodeURIComponent(searchQuery.value)}`);
+        results = response.data;
+      }
+      router.push({ path: '/search', query: { q: searchQuery.value, advanced: isAdvancedSearch.value } });
+
+    } catch (error) {
+      console.error('Erreur lors de la recherche :', error);
+    }  
   };
+  
 </script>
 
 <style scoped>
